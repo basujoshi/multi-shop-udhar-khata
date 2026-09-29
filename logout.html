@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KhataPro • Logout</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:20px;font-family:Arial,system-ui,sans-serif;background:#06101c;color:#eef7ff}.card{width:min(430px,100%);padding:32px;border:1px solid #23415e;border-radius:24px;background:#0b1b2c;box-shadow:0 25px 70px #0008;text-align:center}.logo{width:64px;height:64px;margin:0 auto 16px;border-radius:18px;display:grid;place-items:center;font-size:30px;font-weight:900;background:linear-gradient(135deg,#35c5ff,#1759ed)}h1{margin:0 0 8px;font-size:28px}p{color:#9db2c7;line-height:1.6}.status{margin:22px 0;padding:13px;border-radius:12px;background:#071522;color:#8fdcff}.spinner{width:24px;height:24px;margin:0 auto 10px;border:3px solid #29465f;border-top-color:#35c5ff;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.btn{display:inline-block;padding:12px 18px;border-radius:11px;background:#1666ed;color:white;text-decoration:none;font-weight:800;border:0;cursor:pointer}.btn:disabled{opacity:.55;cursor:not-allowed}.hidden{display:none}.error{color:#ff9a9a}.small{font-size:12px;color:#71889b}
+</style>
+</head>
+<body>
+<main class="card">
+<div class="logo">K</div>
+<h1>Logging out…</h1>
+<p id="message">Please wait. Your KhataPro account is being signed out securely.</p>
+<div class="status" id="status"><div class="spinner"></div>Signing out…</div>
+<a id="loginBtn" class="btn hidden" href="index.html">Go to Login</a>
+<p class="small">KhataPro</p>
+</main>
+
+<script type="module">
+import {auth} from './js/firebase-config.js';
+import {signOut,onAuthStateChanged} from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+
+const status=document.getElementById('status');
+const message=document.getElementById('message');
+const loginBtn=document.getElementById('loginBtn');
+let finished=false;
+
+function goLogin(){
+  if(finished)return;
+  finished=true;
+  // replace prevents the browser Back button from returning to the protected page.
+  location.replace('index.html');
+}
+
+async function doLogout(){
+  try{
+    // Clear any app-only session values too.
+    try{sessionStorage.clear()}catch(e){}
+    await signOut(auth);
+
+    // Wait until Firebase confirms there is no signed-in user.
+    const unsub=onAuthStateChanged(auth,user=>{
+      unsub();
+      if(!user){
+        status.innerHTML='✓ Logout successful';
+        status.style.color='#4de49a';
+        message.textContent='You have been logged out successfully.';
+        setTimeout(goLogin,250);
+      }else{
+        throw new Error('Firebase session is still active.');
+      }
+    });
+  }catch(err){
+    status.innerHTML='<span class="error">Logout failed</span>';
+    message.textContent=err?.message||'Could not sign out. Please try again.';
+    loginBtn.classList.remove('hidden');
+  }
+}
+
+doLogout();
+</script>
+</body>
+</html>
